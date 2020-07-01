@@ -1,0 +1,173 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#setting up the data 
+library(readxl)
+covid19_averages <- read_excel("Documents/covid19_averages.xlsx")
+View(covid19_averages)                       
+attach(covid19_averages)
+```
+```{r}
+plot(`Black population (%)`, `Black Death (%)`, main = "% Population vs. % Deaths", xlab = "% Black Population",
+     ylab="% Deaths")
+pop_vs_death <- lm(`Black Death (%)` ~ `Black population (%)`)
+summary(pop_vs_death)
+cor(`Black population (%)`, `Black Death (%)`)
+abline(pop_vs_death, col=2, lwd=3)
+```
+
+```{r}
+#Determine outliers in 'Death Rate Per 100,000' --> New York 
+OutVals = boxplot(`Death Rate Per 100,000 (Black)`, plot=FALSE)$out
+which(`Death Rate Per 100,000 (Black)` %in% OutVals)
+
+#Determine outliers in 'Black Death %' --> no outliers 
+OutVals1 = boxplot(`Black population (%)`)$out
+which(`Black Death (%)` %in% OutVals1)
+
+#Determine outliers in 'Black Population %' --> no outliers 
+OutVals1 = boxplot(`Black population (%)`)$out
+which(`Black population (%)` %in% OutVals1)
+
+```
+```{r}
+#Comparing correlation of each factor to 'Black Death %' 
+
+cor(`Poverty (%)`, `Black Death (%)`)
+cor(Popdensity, `Black Death (%)`)
+cor(medianhousevalue, `Black Death (%)`)
+cor(medhouseholdincome, `Black Death (%)`)  #Possible confounder -> could be related to poverty
+```
+
+
+```{r}
+cor(education, `Black Death (%)`)
+cor(mean_pm25, `Black Death (%)`)
+cor(`Life exp`, `Black Death (%)`)
+cor(`Diabetes prevalence`, `Black Death (%)`)
+cor(`HIV prevalence `, `Black Death (%)`)
+```
+
+
+```{r}
+cor(`Food insecurity (%)`, `Black Death (%)`)
+cor(`Severe housing cost burden (%)`, `Black Death (%)`)   #negative correlation? WHYYYY
+cor(`Flu vaccinations* (%)`, `Black Death (%)`)            
+cor(`Children in poverty* (%)`, `Black Death (%)`)
+cor(Poverty, `Children in poverty* (%)`)  #possible collinearity 
+```
+
+```{r}
+#New York is potential outlier due to the surge of cases; run regression without New York later 
+plot(`Poverty (%)`, `Black Death (%)`) 
+plot(Popdensity, `Black Death (%)`)   #District of Columbia pop. density should be considered an outlier.  
+plot(medianhousevalue, `Black Death (%)`)    #District of Columbia should be considered an outlier.
+plot(medhouseholdincome, `Black Death (%)`)
+plot(education, `Black Death (%)`)
+plot(mean_pm25, `Black Death (%)`)
+plot(`Life exp`, `Black Death (%)`)
+plot(`Diabetes prevalence`, `Black Death (%)`)
+plot(`HIV prevalence `, `Black Death (%)`)
+plot(`Food insecurity `, `Black Death (%)`)
+plot(`Severe housing cost burden`, `Black Death (%)`)
+plot(`Flu vaccinations*`, `Black Death (%)`)
+plot(`Children in poverty*`, `Black Death (%)`)
+```
+
+```{r}
+#first fit regression model with Poverty and Black Death % 
+plot(scale(`Poverty (%)`), `Black Death (%)`, main = "Poverty (%) vs. Death of Black Population (%) ")
+y1 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`))
+
+summary(y1)
+
+abline(y1, col=2, lwd=3)
+plot(y1)
+```
+
+```{r}
+#next, add in pop. density: 
+y2 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity))
+summary(y2)
+```
+```{r}
+#see if model is better fit with popdensity by carrying out partial F-test: 
+anova(y1, y2)
+```
+```{r}
+#now we add %black population: 
+y2 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity))
+y3 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(`Black population (%)`))
+summary(y2)
+summary(y3)
+anova(y2, y3)
+#ANOVA shows it's not significant, so maybe not keep? 
+```
+```{r}
+cor(`Severe housing cost burden (%)`, medhouseholdincome)
+```
+
+```{r}
+y4 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(medhouseholdincome))
+summary(y2)
+summary(y4)
+anova(y2, y4) #not significant 
+```
+```{r}
+y4 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(`Life exp`))
+summary(y2)
+summary(y4)
+anova(y2, y4)
+```
+```{r}
+y5 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(`Life exp`) + scale(`Flu vaccinations* (%)`))
+summary(y4)
+summary(y5)
+anova(y4, y5)
+#insignificant, not confounder, SE increased
+```
+
+```{r}
+y5 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(`Life exp`) + scale(`Black population (%)`) + scale(medhouseholdincome))
+summary(y4)
+summary(y5)
+anova(y4, y5)
+AIC(y4)
+AIC(y5)
+AIC(y2)
+```
+```{r}
+y6 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(`Life exp`) + scale(`Black population (%)`) + scale(medhouseholdincome) + scale(medianhousevalue))
+
+summary(y6)
+
+
+```
+```{r}
+y7 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(`Life exp`) + scale(`Black population (%)`) + scale(medhouseholdincome) + scale(medianhousevalue) + scale(`Diabetes prevalence (%)`) + scale(`Food insecurity (%)`) + scale(mean_pm25))
+summary(y7)
+AIC(y6)
+AIC(y7)
+```
+
+```{r}
+anova(y6, y7)
+
+```
+```{r}
+y7 <- lm(`Black Death (%)` ~ scale(`Poverty (%)`) + scale(Popdensity) + scale(`Life exp`) + scale(`Black population (%)`) + scale(medhouseholdincome) + scale(`Diabetes prevalence (%)`))
+summary(y7)
+```
+```{r}
+death_reg <- lm(`Black Death (%)` ~ scale(`Black population (%)`) + scale(Popdensity) + scale(medianhousevalue) + scale(`Life exp`) + scale(`Diabetes prevalence (%)`))
+summary(death_reg)
+```
+
+
+
+
+
+
